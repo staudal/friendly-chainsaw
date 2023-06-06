@@ -82,7 +82,7 @@ public class UserEndpointTest {
         System.out.println("Testing is server UP");
         given()
                 .when()
-                .get("/users/all")
+                .get("/users")
                 .then()
                 .statusCode(200);
     }
@@ -92,7 +92,7 @@ public class UserEndpointTest {
     public void testCount() throws Exception {
         given()
                 .contentType("application/json")
-                .get("/users/all").then()
+                .get("/users").then()
                 .assertThat()
                 .statusCode(200).body("size()", org.hamcrest.Matchers.is(2));
     }
