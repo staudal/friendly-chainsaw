@@ -25,7 +25,6 @@ public class UserResource {
     private final UserFacade USER_FACADE = UserFacade.getUserFacade(EMF);
 
     @GET
-    @Path("all")
     @Produces(MediaType.APPLICATION_JSON)
     public List<UserDTO> getAllUsers() {
         return USER_FACADE.getAllUsers();
