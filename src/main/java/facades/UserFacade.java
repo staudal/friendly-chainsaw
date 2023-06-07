@@ -75,4 +75,17 @@ public class UserFacade {
         return UserDTO.getUsersDTO(users);
 
     }
+
+    public UserDTO deleteUser(String user_name) {
+        EntityManager em = emf.createEntityManager();
+        User user = em.find(User.class, user_name);
+        try {
+            em.getTransaction().begin();
+            em.remove(user);
+            em.getTransaction().commit();
+        } finally {
+            em.close();
+        }
+        return new UserDTO(user);
+    }
 }
