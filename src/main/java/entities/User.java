@@ -1,11 +1,8 @@
 package entities;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import javax.persistence.*;
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Size;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -19,19 +16,21 @@ import org.mindrot.jbcrypt.BCrypt;
 @Entity
 @Table(name = "users")
 @NamedQuery(name = "User.deleteAllRows", query = "DELETE from User")
-public class User implements Serializable {
+public class User {
 
-    private static final long serialVersionUID = 1L;
     @Id
-    @Basic(optional = false)
-    @NotNull
     @Column(name = "user_name", length = 25)
     private String userName;
-    @Basic(optional = false)
-    @NotNull
-    @Size(min = 1, max = 255)
+
     @Column(name = "user_pass")
     private String userPass;
+
+    @Column(name = "first_name", length = 25)
+    private String firstName;
+
+    @Column(name = "last_name", length = 25)
+    private String lastName;
+
     @JoinTable(name = "user_roles", joinColumns = {
             @JoinColumn(name = "user_name", referencedColumnName = "user_name")}, inverseJoinColumns = {
             @JoinColumn(name = "role_name", referencedColumnName = "role_name")})
@@ -53,8 +52,10 @@ public class User implements Serializable {
         return BCrypt.checkpw(pw, userPass);
     }
 
-    public User(String userName, String userPass) {
+    public User(String userName, String userPass, String firstName, String lastName) {
         this.userName = userName;
+        this.firstName = firstName;
+        this.lastName = lastName;
         this.userPass = BCrypt.hashpw(userPass, BCrypt.gensalt());
     }
 

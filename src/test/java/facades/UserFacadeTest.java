@@ -33,8 +33,8 @@ public class UserFacadeTest {
     public void setUp() {
         EntityManager em = emf.createEntityManager();
 
-        user1 = new User("user1", "test123");
-        user2 = new User("user2", "test123");
+        user1 = new User("user1", "test123", "test", "test");
+        user2 = new User("user2", "test123", "test", "test");
 
         try {
             em.getTransaction().begin();
