@@ -3,19 +3,15 @@ package rest;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import dtos.UserDTO;
-import entities.User;
-import java.util.List;
-import javax.annotation.security.RolesAllowed;
-import javax.persistence.EntityManager;
-import javax.persistence.EntityManagerFactory;
-import javax.persistence.TypedQuery;
-import javax.ws.rs.*;
-import javax.ws.rs.core.*;
-
 import errorhandling.API_Exception;
 import facades.UserFacade;
-
 import utils.EMF_Creator;
+
+import javax.persistence.EntityManagerFactory;
+import javax.ws.rs.*;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import java.util.List;
 
 @Path("users")
 public class UserResource {
@@ -57,6 +53,25 @@ public class UserResource {
             return Response.ok(userDTO).build();
         } catch (Exception e) {
             throw new API_Exception("Could not delete user", 400);
+        }
+    }
+
+    // Edit first name and last name
+    @PUT
+    @Path("/edit/{user_name}")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response editUser(@PathParam("user_name") String user_name, String jsonUser) throws API_Exception {
+        UserDTO userDTO = GSON.fromJson(jsonUser, UserDTO.class);
+
+        // Attach username to userDTO
+        userDTO.setUser_name(user_name);
+
+        try {
+            UserDTO editedUser = USER_FACADE.editUser(userDTO);
+            return Response.ok(editedUser).build();
+        } catch (Exception e) {
+            throw new API_Exception("Could not edit user", 400);
         }
     }
 

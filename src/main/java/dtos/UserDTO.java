@@ -36,4 +36,10 @@ public class UserDTO {
         users.forEach(user -> usersDTO.add(new UserDTO(user)));
         return usersDTO;
     }
+
+    public UserDTO(String user_name, String firstName, String lastName) {
+        this.user_name = user_name;
+        this.firstName = firstName;
+        this.lastName = lastName;
+    }
 }

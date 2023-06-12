@@ -1,6 +1,7 @@
 package facades;
 
 import entities.User;
+import errorhandling.API_Exception;
 import lombok.NoArgsConstructor;
 import org.junit.jupiter.api.*;
 import utils.EMF_Creator;
@@ -54,5 +55,23 @@ public class UserFacadeTest {
     @Test
     public void countNumberOfWorkoutsInTestDB() {
         assertEquals(2, facade.countUsers(), "Expects two rows in the database");
+    }
+
+    @Test
+    public void testGetUser() throws API_Exception {
+        assertEquals(user1.getUserName(), facade.getUser(user1.getUserName()).getUserName());
+    }
+
+    @Test
+    public void testEditFirstName() throws API_Exception {
+        EntityManager em = emf.createEntityManager();
+        User user = em.find(User.class, user1.getUserName());
+        user.setFirstName("newFirstName");
+        em.getTransaction().begin();
+        em.merge(user);
+        em.getTransaction().commit();
+        em.close();
+
+        assertEquals("newFirstName", facade.getUser(user1.getUserName()).getFirstName());
     }
 }

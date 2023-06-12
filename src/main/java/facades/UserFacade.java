@@ -5,6 +5,8 @@ import entities.Role;
 import entities.User;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
+
+import errorhandling.API_Exception;
 import security.errorhandling.AuthenticationException;
 
 import java.util.List;
@@ -32,6 +34,20 @@ public class UserFacade {
             user = em.find(User.class, username);
             if (user == null || !user.verifyPassword(password)) {
                 throw new AuthenticationException("Invalid user name or password");
+            }
+        } finally {
+            em.close();
+        }
+        return user;
+    }
+
+    public User getUser(String username) throws API_Exception {
+        EntityManager em = emf.createEntityManager();
+        User user;
+        try {
+            user = em.find(User.class, username);
+            if (user == null) {
+                throw new API_Exception("User not found", 404);
             }
         } finally {
             em.close();
@@ -87,5 +103,28 @@ public class UserFacade {
             em.close();
         }
         return new UserDTO(user);
+    }
+
+    public UserDTO editUser(UserDTO userDTO) throws API_Exception {
+        EntityManager em = emf.createEntityManager();
+
+        User user = em.find(User.class, userDTO.getUser_name());
+
+        if (userDTO.getFirstName() != null) {
+            user.setFirstName(userDTO.getFirstName());
+        }
+
+        if (userDTO.getLastName() != null) {
+            user.setLastName(userDTO.getLastName());
+        }
+
+        try {
+            em.getTransaction().begin();
+            em.merge(user);
+            em.getTransaction().commit();
+        } finally {
+            em.close();
+        }
+        return new UserDTO(user.getUserName(), user.getFirstName(), user.getLastName());
     }
 }

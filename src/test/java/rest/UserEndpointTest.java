@@ -87,13 +87,33 @@ public class UserEndpointTest {
                 .statusCode(200);
     }
 
-    // Rest assured test that verifies that the endpoint returns the number of rows in the Car table.
     @Test
-    public void testCount() throws Exception {
+    public void testCount() {
         given()
                 .contentType("application/json")
                 .get("/users").then()
                 .assertThat()
                 .statusCode(200).body("size()", org.hamcrest.Matchers.is(2));
+    }
+
+    @Test
+    public void testGetAllUsers() {
+        given()
+                .contentType("application/json")
+                .get("/users").then()
+                .assertThat()
+                .statusCode(200)
+                .body("user_name", org.hamcrest.Matchers.hasItems("user1", "user2"));
+    }
+
+    @Test
+    public void testEditFirstName() {
+        given()
+                .contentType("application/json")
+                .body("{\"firstName\": \"test2\"}")
+                .put("/users/edit/user1").then()
+                .assertThat()
+                .statusCode(200)
+                .body("firstName", org.hamcrest.Matchers.is("test2"));
     }
 }
