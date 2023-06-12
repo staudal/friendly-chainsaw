@@ -64,6 +64,9 @@ public class UserResource {
     public Response editUser(@PathParam("user_name") String user_name, String jsonUser) throws API_Exception {
         UserDTO userDTO = GSON.fromJson(jsonUser, UserDTO.class);
 
+        System.out.println("user_name: " + user_name);
+        System.out.println("userDTO: " + userDTO);
+
         // Attach username to userDTO
         userDTO.setUser_name(user_name);
 
