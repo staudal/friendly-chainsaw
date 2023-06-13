@@ -7,14 +7,20 @@ import errorhandling.API_Exception;
 import facades.UserFacade;
 import utils.EMF_Creator;
 
+import javax.annotation.security.RolesAllowed;
 import javax.persistence.EntityManagerFactory;
 import javax.ws.rs.*;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+import javax.ws.rs.core.*;
 import java.util.List;
 
 @Path("users")
 public class UserResource {
+
+    @Context
+    private UriInfo context;
+
+    @Context
+    SecurityContext securityContext;
 
     private static final EntityManagerFactory EMF = EMF_Creator.createEntityManagerFactory();
     private final UserFacade USER_FACADE = UserFacade.getUserFacade(EMF);
@@ -22,6 +28,7 @@ public class UserResource {
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
+    @RolesAllowed("admin")
     public List<UserDTO> getAllUsers() {
         return USER_FACADE.getAllUsers();
     }

@@ -64,8 +64,7 @@ public class RolesAllowedFilter implements ContainerRequestFilter {
           return true;
         }
       }
-      //requestContext.abortWith(NOT_FOUND);
-      //abort(requestContext);
+
       throw new NotAuthorizedException("You are not authorized to perform the requested operation",Response.Status.FORBIDDEN);
     }
     return false;

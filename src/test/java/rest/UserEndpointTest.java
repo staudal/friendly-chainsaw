@@ -1,5 +1,6 @@
 package rest;
 
+import entities.Role;
 import entities.User;
 import io.restassured.RestAssured;
 import io.restassured.parsing.Parser;
@@ -17,6 +18,7 @@ import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
+import java.util.ArrayList;
 
 
 import static io.restassured.RestAssured.given;
@@ -28,6 +30,9 @@ public class UserEndpointTest {
     static final URI BASE_URI = UriBuilder.fromUri(SERVER_URL).port(SERVER_PORT).build();
     private static HttpServer httpServer;
     private static EntityManagerFactory emf;
+
+    //This is how we hold on to the token after login, similar to that a client must store the token somewhere
+    private static String securityToken;
 
     User user1, user2;
 
@@ -63,51 +68,76 @@ public class UserEndpointTest {
     public void setUp() {
         EntityManager em = emf.createEntityManager();
 
-        user1 = new User("user1", "test123", "test", "test");
-        user2 = new User("user2", "test123", "test", "test");
-
         try {
-            em.getTransaction().begin();
-            em.createNamedQuery("User.deleteAllRows").executeUpdate();
+em.getTransaction().begin();
+            em.createQuery("DELETE FROM User").executeUpdate();
+            em.createQuery("DELETE FROM Role").executeUpdate();
+
+            user1 = new User("user1", "test1", "jakob", "staudal");
+            user2 = new User("user2", "test2", "bokaj", "laduats");
+
+            Role userRole = new Role("user");
+            Role adminRole = new Role("admin");
+
+            user1.addRole(userRole);
+            user2.addRole(adminRole);
+
+            em.persist(userRole);
+            em.persist(adminRole);
+
             em.persist(user1);
             em.persist(user2);
+
             em.getTransaction().commit();
         } finally {
             em.close();
         }
     }
 
-    @Test
-    public void testServerIsUp() {
-        System.out.println("Testing is server UP");
-        given()
-                .when()
-                .get("/users")
+    //Utility method to login and set the returned securityToken
+    private static void login(String role, String password) {
+        String json = String.format("{username: \"%s\", password: \"%s\"}", role, password);
+        securityToken = given()
+                .contentType("application/json")
+                .body(json)
+                //.when().post("/api/login")
+                .when().post("/login")
                 .then()
-                .statusCode(200);
+                .extract().path("token");
+        //System.out.println("TOKEN ---> " + securityToken);
+    }
+
+    private void logOut() {
+        securityToken = null;
     }
 
     @Test
     public void testCount() {
+        login("user2", "test2");
         given()
                 .contentType("application/json")
+                .header("x-access-token", securityToken)
                 .get("/users").then()
                 .assertThat()
                 .statusCode(200).body("size()", org.hamcrest.Matchers.is(2));
     }
 
+    // Secure endpoint test
     @Test
     public void testGetAllUsers() {
+        login("user2", "test2");
         given()
                 .contentType("application/json")
+                .header("x-access-token", securityToken)
                 .get("/users").then()
                 .assertThat()
                 .statusCode(200)
-                .body("user_name", org.hamcrest.Matchers.hasItems("user1", "user2"));
+                .body("size()", org.hamcrest.Matchers.is(2));
     }
 
     @Test
     public void testEditFirstName() {
+        login("user1", "test1");
         given()
                 .contentType("application/json")
                 .body("{\"firstName\": \"test2\"}")
