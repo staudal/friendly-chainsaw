@@ -137,9 +137,10 @@ em.getTransaction().begin();
 
     @Test
     public void testEditFirstName() {
-        login("user1", "test1");
+        login("user2", "test2");
         given()
                 .contentType("application/json")
+                .header("x-access-token", securityToken)
                 .body("{\"firstName\": \"test2\"}")
                 .put("/users/edit/user1").then()
                 .assertThat()

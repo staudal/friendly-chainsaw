@@ -50,6 +50,7 @@ public class UserResource {
     @DELETE
     @Path("/delete/{user_name}")
     @Produces(MediaType.APPLICATION_JSON)
+    @RolesAllowed("admin")
     public Response deleteUser(@PathParam("user_name") String user_name) throws API_Exception {
         if (user_name == null || user_name.equals("admin")) {
             throw new API_Exception("Can't delete yourself", 400);
@@ -68,6 +69,7 @@ public class UserResource {
     @Path("/edit/{user_name}")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
+    @RolesAllowed("admin")
     public Response editUser(@PathParam("user_name") String user_name, String jsonUser) throws API_Exception {
         UserDTO userDTO = GSON.fromJson(jsonUser, UserDTO.class);
 
