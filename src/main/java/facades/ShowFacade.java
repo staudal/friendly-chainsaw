@@ -93,8 +93,10 @@ public class ShowFacade {
             if (showToEdit.getFestival() != null) {
 
                 // removing show from old festival
-                Festival oldFestival = em.find(Festival.class, show.getFestival().getId());
-                oldFestival.getShows().remove(show);
+                if (show.getFestival() != null) {
+                    show.getFestival().getShows().remove(show);
+                    show.setFestival(null);
+                }
 
                 // removing show from users
                 for (User user : show.getGuests()) {
@@ -103,14 +105,17 @@ public class ShowFacade {
 
                 // adding show to new festival
                 Festival newFestival = em.find(Festival.class, showToEdit.getFestival());
+
+                if (newFestival == null) {
+                    throw new API_Exception("No festival with that ID exists", 400);
+                }
+
                 newFestival.getShows().add(show);
                 show.setFestival(newFestival);
             }
 
             em.getTransaction().commit();
             return new ShowDTO(show);
-        } catch (Exception e) {
-            throw new API_Exception("Could not edit show", 400);
         } finally {
             em.close();
         }
