@@ -3,6 +3,7 @@ package facades;
 import dtos.FestivalDTO;
 import dtos.UserDTO;
 import entities.Festival;
+import entities.Show;
 import entities.User;
 import errorhandling.API_Exception;
 import lombok.NoArgsConstructor;
@@ -97,9 +98,23 @@ public class FestivalFacade {
     public FestivalDTO deleteFestival(Long id) throws API_Exception {
         EntityManager em = emf.createEntityManager();
         Festival festival = em.find(Festival.class, id);
+        List<User> guests = festival.getGuests();
+        List<Show> shows = festival.getShows();
         try {
             em.getTransaction().begin();
+
+            // Remove guests from festival
+            for (User guest : guests) {
+                guest.getFestivals().remove(festival);
+            }
+
+            // Remove shows from festival
+            for (Show show : shows) {
+                em.remove(show);
+            }
+
             em.remove(festival);
+
             em.getTransaction().commit();
             return new FestivalDTO(festival);
         } catch (Exception e) {
@@ -118,6 +133,66 @@ public class FestivalFacade {
                 guests.add(new UserDTO(user));
             }
             return guests;
+        } finally {
+            em.close();
+        }
+    }
+
+    public List<FestivalDTO> getFestivalsByUser(String username) {
+        EntityManager em = emf.createEntityManager();
+        List<FestivalDTO> festivals = new ArrayList<>();
+        try {
+            User user = em.find(User.class, username);
+            for (Festival festival : user.getFestivals()) {
+                festivals.add(new FestivalDTO(festival));
+            }
+            return festivals;
+        } finally {
+            em.close();
+        }
+    }
+
+    public FestivalDTO removeUserFromFestival(Long id, UserDTO userToRemove) {
+        EntityManager em = emf.createEntityManager();
+        try {
+            em.getTransaction().begin();
+
+            Festival festival = em.find(Festival.class, id);
+            User user = em.find(User.class, userToRemove.getUser_name());
+
+            festival.getGuests().remove(user);
+            user.getFestivals().remove(festival);
+
+            // remove festival shows from user
+            for (Show show : festival.getShows()) {
+                user.getShows().remove(show);
+            }
+
+            // remove user from festival shows
+            for (Show show : festival.getShows()) {
+                show.getGuests().remove(user);
+            }
+
+            em.getTransaction().commit();
+            return new FestivalDTO(festival);
+        } finally {
+            em.close();
+        }
+    }
+
+    public FestivalDTO addUserToFestival(Long id, UserDTO userToAdd) {
+        EntityManager em = emf.createEntityManager();
+        try {
+            em.getTransaction().begin();
+
+            Festival festival = em.find(Festival.class, id);
+            User user = em.find(User.class, userToAdd.getUser_name());
+
+            festival.getGuests().add(user);
+            user.getFestivals().add(festival);
+
+            em.getTransaction().commit();
+            return new FestivalDTO(festival);
         } finally {
             em.close();
         }

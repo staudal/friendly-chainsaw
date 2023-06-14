@@ -90,7 +90,21 @@ public class UserFacade {
         }
 
         return UserDTO.getUserDTOs(users);
+    }
 
+    public List<UserDTO> getGuestsForShow(Long id) {
+        EntityManager em = emf.createEntityManager();
+        List<User> users;
+
+        try {
+            users = em.createQuery("SELECT u FROM User u JOIN u.shows s WHERE s.id = :id", User.class)
+                    .setParameter("id", id)
+                    .getResultList();
+        } finally {
+            em.close();
+        }
+
+        return UserDTO.getUserDTOs(users);
     }
 
     public UserDTO deleteUser(String user_name) {
@@ -106,27 +120,17 @@ public class UserFacade {
         return new UserDTO(user);
     }
 
-    public UserDTO editUser(UserDTO userDTO) throws API_Exception {
+    public UserDTO editUser(UserDTO userDTO) {
         EntityManager em = emf.createEntityManager();
 
         User user = em.find(User.class, userDTO.getUser_name());
 
-        Festival oldFestival = user.getFestival();
-        Festival newFestival = em.find(Festival.class, userDTO.getFestival());
-
-        if (userDTO.getFirstName() != null) {
+        if (!userDTO.getFirstName().equals("")) {
             user.setFirstName(userDTO.getFirstName());
         }
 
-        if (userDTO.getLastName() != null) {
+        if (!userDTO.getLastName().equals("")) {
             user.setLastName(userDTO.getLastName());
-        }
-
-        if (userDTO.getFestival() != null) {
-            if (oldFestival != null) {
-                oldFestival.getGuests().remove(user);
-            }
-            newFestival.getGuests().add(user);
         }
 
         try {

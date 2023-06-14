@@ -141,7 +141,7 @@ em.getTransaction().begin();
         given()
                 .contentType("application/json")
                 .header("x-access-token", securityToken)
-                .body("{\"firstName\": \"test2\"}")
+                .body("{\"firstName\": \"test2\", \"lastName\": \"\"}")
                 .put("/users/edit/user1").then()
                 .assertThat()
                 .statusCode(200)

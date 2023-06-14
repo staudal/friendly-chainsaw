@@ -35,8 +35,16 @@ public class Festival {
     @Column(name = "endDate")
     private LocalDate endDate;
 
-    @OneToMany(mappedBy = "festival")
+    @JoinTable(
+            name = "festivals_users",
+            joinColumns = @JoinColumn(name = "festival_id"),
+            inverseJoinColumns = @JoinColumn(name = "username")
+    )
+    @ManyToMany
     private List<User> guests = new ArrayList<>();
+
+    @OneToMany(mappedBy = "festival")
+    private List<Show> shows = new ArrayList<>();
 
     public Festival(FestivalDTO festivalToAdd) {
         this.name = festivalToAdd.getName();

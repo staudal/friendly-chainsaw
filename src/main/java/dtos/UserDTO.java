@@ -1,5 +1,6 @@
 package dtos;
 
+import entities.Festival;
 import entities.Role;
 import entities.User;
 import lombok.Getter;
@@ -20,7 +21,7 @@ public class UserDTO {
     private String firstName;
     private String lastName;
     private List<String> roles = new ArrayList<>();
-    private Long festival;
+    private List<Long> festivals = new ArrayList<>();
 
     public UserDTO(User user) {
         this.user_name = user.getUserName();
@@ -30,8 +31,8 @@ public class UserDTO {
         for (Role role : user.getRoleList()) {
             this.roles.add(role.getRoleName());
         }
-        if (user.getFestival() != null) {
-            this.festival = user.getFestival().getId();
+        for (Festival festival : user.getFestivals()) {
+            this.festivals.add(festival.getId());
         }
     }
 
