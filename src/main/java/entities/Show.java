@@ -20,7 +20,7 @@ import java.util.List;
 @NamedQuery(name = "Show.deleteAllRows", query = "DELETE from Show")
 public class Show {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.AUTO)
     @Column(name = "id")
     private Long id;
 
