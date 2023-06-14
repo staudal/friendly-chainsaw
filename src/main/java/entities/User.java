@@ -37,6 +37,10 @@ public class User {
     @ManyToMany
     private List<Role> roleList = new ArrayList<>();
 
+    @ManyToOne
+    @JoinColumn(name = "festival")
+    private Festival festival;
+
     public List<String> getRolesAsStrings() {
         if (roleList.isEmpty()) {
             return null;

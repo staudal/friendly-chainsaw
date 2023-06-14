@@ -20,6 +20,7 @@ public class UserDTO {
     private String firstName;
     private String lastName;
     private List<String> roles = new ArrayList<>();
+    private Long festival;
 
     public UserDTO(User user) {
         this.user_name = user.getUserName();
@@ -29,9 +30,12 @@ public class UserDTO {
         for (Role role : user.getRoleList()) {
             this.roles.add(role.getRoleName());
         }
+        if (user.getFestival() != null) {
+            this.festival = user.getFestival().getId();
+        }
     }
 
-    public static List<UserDTO> getUsersDTO(List<User> users){
+    public static List<UserDTO> getUserDTOs(List<User> users){
         List<UserDTO> usersDTO = new ArrayList<>();
         users.forEach(user -> usersDTO.add(new UserDTO(user)));
         return usersDTO;

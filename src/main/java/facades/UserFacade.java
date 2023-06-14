@@ -1,6 +1,7 @@
 package facades;
 
 import dtos.UserDTO;
+import entities.Festival;
 import entities.Role;
 import entities.User;
 import javax.persistence.EntityManager;
@@ -88,7 +89,7 @@ public class UserFacade {
             em.close();
         }
 
-        return UserDTO.getUsersDTO(users);
+        return UserDTO.getUserDTOs(users);
 
     }
 
@@ -110,12 +111,22 @@ public class UserFacade {
 
         User user = em.find(User.class, userDTO.getUser_name());
 
+        Festival oldFestival = user.getFestival();
+        Festival newFestival = em.find(Festival.class, userDTO.getFestival());
+
         if (userDTO.getFirstName() != null) {
             user.setFirstName(userDTO.getFirstName());
         }
 
         if (userDTO.getLastName() != null) {
             user.setLastName(userDTO.getLastName());
+        }
+
+        if (userDTO.getFestival() != null) {
+            if (oldFestival != null) {
+                oldFestival.getGuests().remove(user);
+            }
+            newFestival.getGuests().add(user);
         }
 
         try {
