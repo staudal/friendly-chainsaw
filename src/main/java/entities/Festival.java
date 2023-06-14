@@ -17,6 +17,7 @@ import java.util.List;
 
 @Entity
 @Table(name = "festivals")
+@NamedQuery(name = "Festival.deleteAllRows", query = "DELETE from Festival")
 public class Festival {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

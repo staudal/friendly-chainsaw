@@ -9,6 +9,7 @@ import facades.FestivalFacade;
 import utils.EMF_Creator;
 import utils.LocalDateTypeAdapter;
 
+import javax.annotation.security.RolesAllowed;
 import javax.persistence.EntityManagerFactory;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
@@ -26,79 +27,76 @@ public class FestivalResource {
     private final FestivalFacade FESTIVAL_FACADE = FestivalFacade.getFestivalFacade(EMF);
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().registerTypeAdapter(LocalDate.class, new LocalDateTypeAdapter()).create();
 
+    // Used to get all festivals on the AdminFestivals page and the UserFestivals page
     @GET
     @Produces(MediaType.APPLICATION_JSON)
+    @RolesAllowed({"user", "admin"})
     public Response getAllFestivals() {
         return Response.ok(FESTIVAL_FACADE.getAllFestivals()).build();
     }
 
+    // Used to get all festivals that the user is attending on the UserFestivals page
     @GET
-    @Path("/{id}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getFestivalById(@PathParam("id") Long id) throws API_Exception {
-        return Response.ok(FESTIVAL_FACADE.getFestivalById(id)).build();
-    }
-
-    @GET
+    @RolesAllowed("user")
     @Path("/user/{username}")
-    @Produces(MediaType.APPLICATION_JSON)
     public Response getFestivalsByUser(@PathParam("username") String username) throws API_Exception {
         return Response.ok(FESTIVAL_FACADE.getFestivalsByUser(username)).build();
     }
 
-    @GET
-    @Path("/guests/{id}")
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response getFestivalGuests(@PathParam("id") Long id) throws API_Exception {
-        return Response.ok(FESTIVAL_FACADE.getFestivalGuests(id)).build();
-    }
-
+    // Used to create a new festival in the AddFestivalModal component
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response addFestival(String festival) throws API_Exception {
+    @RolesAllowed("admin")
+    public Response createNewFestival(String festival) throws API_Exception {
         FestivalDTO festivalToAdd = GSON.fromJson(festival, FestivalDTO.class);
-        FestivalDTO addedFestival = FESTIVAL_FACADE.addFestival(festivalToAdd);
+        FestivalDTO addedFestival = FESTIVAL_FACADE.createNewFestival(festivalToAdd);
         return Response.ok(addedFestival).build();
     }
 
+    // Used to edit a festival in the EditFestivalModal component
     @PUT
-    @Path("/{id}")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
+    @RolesAllowed("admin")
+    @Path("/{id}")
     public Response editFestival(@PathParam("id") Long id, String festival) throws API_Exception {
         FestivalDTO festivalToEdit = GSON.fromJson(festival, FestivalDTO.class);
         FestivalDTO editedFestival = FESTIVAL_FACADE.editFestival(id, festivalToEdit);
         return Response.ok(editedFestival).build();
     }
 
-    // remove user from festival
-    @PUT
-    @Path("/user/remove/{id}")
-    @Consumes(MediaType.APPLICATION_JSON)
+    @DELETE
     @Produces(MediaType.APPLICATION_JSON)
-    public Response removeUserFromFestival(@PathParam("id") Long id, String username) throws API_Exception {
-        UserDTO userToRemove = GSON.fromJson(username, UserDTO.class);
-        FestivalDTO festival = FESTIVAL_FACADE.removeUserFromFestival(id, userToRemove);
-        return Response.ok(festival).build();
+    @RolesAllowed("admin")
+    @Path("/{id}")
+    public Response deleteFestival(@PathParam("id") Long id) throws API_Exception {
+        FestivalDTO deletedFestival = FESTIVAL_FACADE.deleteFestival(id);
+        return Response.ok(deletedFestival).build();
     }
 
-    // add user to festival
+    // Used to add a user to a festival on the UserFestivals page
     @PUT
-    @Path("/user/add/{id}")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
+    @RolesAllowed("user")
+    @Path("/user/add/{id}")
     public Response addUserToFestival(@PathParam("id") Long id, String username) throws API_Exception {
         UserDTO userToAdd = GSON.fromJson(username, UserDTO.class);
         FestivalDTO festival = FESTIVAL_FACADE.addUserToFestival(id, userToAdd);
         return Response.ok(festival).build();
     }
 
-    @DELETE
-    @Path("/{id}")
+    // Used to remove a user from a festival on the UserFestivals page
+    @PUT
+    @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response deleteFestival(@PathParam("id") Long id) throws API_Exception {
-        FestivalDTO deletedFestival = FESTIVAL_FACADE.deleteFestival(id);
-        return Response.ok(deletedFestival).build();
+    @RolesAllowed("user")
+    @Path("/user/remove/{id}")
+    public Response removeUserFromFestival(@PathParam("id") Long id, String username) throws API_Exception {
+        UserDTO userToRemove = GSON.fromJson(username, UserDTO.class);
+        FestivalDTO festival = FESTIVAL_FACADE.removeUserFromFestival(id, userToRemove);
+        return Response.ok(festival).build();
     }
 }

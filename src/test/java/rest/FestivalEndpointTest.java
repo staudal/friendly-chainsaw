@@ -1,10 +1,11 @@
 package rest;
 
+import entities.Festival;
 import entities.Role;
+import entities.Show;
 import entities.User;
 import io.restassured.RestAssured;
 import io.restassured.parsing.Parser;
-
 import org.glassfish.grizzly.http.server.HttpServer;
 import org.glassfish.jersey.grizzly2.httpserver.GrizzlyHttpServerFactory;
 import org.glassfish.jersey.server.ResourceConfig;
@@ -18,11 +19,12 @@ import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
+import java.time.LocalDate;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
 
-public class UserEndpointTest {
+public class FestivalEndpointTest {
     private static final int SERVER_PORT = 7777;
     private static final String SERVER_URL = "http://localhost/api";
 
@@ -34,6 +36,8 @@ public class UserEndpointTest {
     private static String securityToken;
 
     User user1, user2;
+    Show show1, show2;
+    Festival festival1, festival2;
 
     static HttpServer startServer() {
         ResourceConfig rc = ResourceConfig.forApplication(new ApplicationConfig());
@@ -69,6 +73,8 @@ public class UserEndpointTest {
             em.getTransaction().begin();
             em.createQuery("DELETE FROM User").executeUpdate();
             em.createQuery("DELETE FROM Role").executeUpdate();
+            em.createQuery("DELETE FROM Show").executeUpdate();
+            em.createQuery("DELETE FROM Festival").executeUpdate();
 
             user1 = new User("admin", "test123", "jakob", "staudal");
             user2 = new User("user", "test123", "bokaj", "laduats");
@@ -79,11 +85,35 @@ public class UserEndpointTest {
             user1.addRole(userRole);
             user2.addRole(adminRole);
 
+            festival1 = new Festival("Roskilde Festival", "Roskilde", LocalDate.of(2023, 5, 2), LocalDate.of(2023, 5, 6));
+            festival2 = new Festival("Smukfest", "Skanderborg", LocalDate.of(2023, 5, 2), LocalDate.of(2023, 5, 6));
+
+            show1 = new Show("Avatar 3", 124, LocalDate.of(2023, 5, 2));
+            show2 = new Show("Avatar 4", 124, LocalDate.of(2027, 5, 2));
+
+            festival1.getGuests().add(user1);
+            festival2.getGuests().add(user2);
+
+            user1.getFestivals().add(festival1);
+            user2.getFestivals().add(festival2);
+
+            festival1.getShows().add(show1);
+            festival2.getShows().add(show2);
+
+            show1.setFestival(festival1);
+            show2.setFestival(festival2);
+
+            show1.getGuests().add(user1);
+            user1.getShows().add(show1);
+
             em.persist(userRole);
             em.persist(adminRole);
-
             em.persist(user1);
             em.persist(user2);
+            em.persist(festival1);
+            em.persist(festival2);
+            em.persist(show1);
+            em.persist(show2);
 
             em.getTransaction().commit();
         } finally {
@@ -104,61 +134,105 @@ public class UserEndpointTest {
         //System.out.println("TOKEN ---> " + securityToken);
     }
 
-    // Test of getAllUsers endpoint
+    // Test of getAllFestivals endpoint
     @Test
-    public void testGetAllUsers() {
+    public void testGetAllFestivals() {
         login("admin", "test123");
         given()
                 .contentType("application/json")
                 .header("x-access-token", securityToken)
                 .when()
-                .get("/users")
+                .get("/festivals")
                 .then()
                 .statusCode(200)
                 .body("size()", equalTo(2));
     }
 
-    // Test of createUser endpoint
+    // Test of getFestivalsByUser endpoint
     @Test
-    public void testCreateUser() {
-        login("admin", "test123");
+    public void testGetFestivalsByUser() {
+        login("user", "test123");
         given()
                 .contentType("application/json")
                 .header("x-access-token", securityToken)
-                .body("{\"user_name\":\"test\", \"user_pass\":\"test123\", \"firstName\":\"test\", \"lastName\":\"test\"}")
                 .when()
-                .post("/users")
+                .get("/festivals/user/" + user1.getUserName())
                 .then()
                 .statusCode(200)
-                .body("user_name", equalTo("test"));
+                .body("size()", equalTo(1));
     }
 
-    // Test of deleteUser endpoint
+    // Test of createNewFestival endpoint
     @Test
-    public void testDeleteUser() {
+    public void testCreateNewFestival() {
         login("admin", "test123");
         given()
                 .contentType("application/json")
                 .header("x-access-token", securityToken)
+                .body("{\"name\": \"Test Festival\", \"city\": \"Test City\", \"startDate\": \"2023-05-02\", \"endDate\": \"2023-05-06\"}")
                 .when()
-                .delete("/users/delete/" + user2.getUserName())
+                .post("/festivals")
                 .then()
                 .statusCode(200)
-                .body("user_name", equalTo("user"));
+                .body("name", equalTo("Test Festival"));
     }
 
-    // Test of editUser endpoint
+    // Test of editFestival endpoint
     @Test
-    public void testEditUser() {
+    public void testEditFestival() {
         login("admin", "test123");
         given()
                 .contentType("application/json")
                 .header("x-access-token", securityToken)
-                .body("{\"user_name\":\"\", \"user_pass\":\"\", \"firstName\":\"test\", \"lastName\":\"\"}")
+                .body("{\"name\": \"Test Festival EDITED\", \"city\": \"\", \"startDate\": \"\", \"endDate\": \"\"}")
                 .when()
-                .put("/users/edit/" + user2.getUserName())
+                .put("/festivals/" + festival1.getId())
                 .then()
                 .statusCode(200)
-                .body("firstName", equalTo("test"));
+                .body("name", equalTo("Test Festival EDITED"));
+    }
+
+    // Test of deleteFestival endpoint
+    @Test
+    public void testDeleteFestival() {
+        login("admin", "test123");
+        given()
+                .contentType("application/json")
+                .header("x-access-token", securityToken)
+                .when()
+                .delete("/festivals/" + festival1.getId())
+                .then()
+                .statusCode(200)
+                .body("name", equalTo("Roskilde Festival"));
+    }
+
+    // Test of addUserToFestival endpoint
+    @Test
+    public void testAddUserToFestival() {
+        login("user", "test123");
+        given()
+                .contentType("application/json")
+                .header("x-access-token", securityToken)
+                .body("{\"user_name\": \"user\"}")
+                .when()
+                .put("/festivals/user/add/" + festival1.getId())
+                .then()
+                .statusCode(200)
+                .body("name", equalTo("Roskilde Festival"));
+    }
+
+    // Test of removeUserFromFestival endpoint
+    @Test
+    public void testRemoveUserFromFestival() {
+        login("user", "test123");
+        given()
+                .contentType("application/json")
+                .header("x-access-token", securityToken)
+                .body("{\"user_name\": \"admin\"}")
+                .when()
+                .put("/festivals/user/remove/" + festival1.getId())
+                .then()
+                .statusCode(200)
+                .body("name", equalTo("Roskilde Festival"));
     }
 }

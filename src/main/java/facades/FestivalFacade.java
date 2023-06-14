@@ -37,18 +37,7 @@ public class FestivalFacade {
         }
     }
 
-    public FestivalDTO getFestivalById(Long id) throws API_Exception {
-        EntityManager em = emf.createEntityManager();
-        try {
-            return new FestivalDTO(em.find(Festival.class, id));
-        } catch (Exception e) {
-            throw new API_Exception("No festival with provided id found", 404);
-        } finally {
-            em.close();
-        }
-    }
-
-    public FestivalDTO addFestival(FestivalDTO festivalToAdd) throws API_Exception {
+    public FestivalDTO createNewFestival(FestivalDTO festivalToAdd) throws API_Exception {
         EntityManager em = emf.createEntityManager();
         Festival festival = new Festival(festivalToAdd);
         try {
@@ -63,9 +52,9 @@ public class FestivalFacade {
         }
     }
 
-    public FestivalDTO editFestival(Long id, FestivalDTO festivalToEdit) throws API_Exception {
+    public FestivalDTO editFestival(Long festivalId, FestivalDTO festivalToEdit) throws API_Exception {
         EntityManager em = emf.createEntityManager();
-        Festival festival = em.find(Festival.class, id);
+        Festival festival = em.find(Festival.class, festivalId);
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
         try {
             em.getTransaction().begin();
@@ -98,6 +87,11 @@ public class FestivalFacade {
     public FestivalDTO deleteFestival(Long id) throws API_Exception {
         EntityManager em = emf.createEntityManager();
         Festival festival = em.find(Festival.class, id);
+
+        if (festival == null) {
+            throw new API_Exception("Could not find festival", 400);
+        }
+
         List<User> guests = festival.getGuests();
         List<Show> shows = festival.getShows();
         try {
@@ -124,21 +118,7 @@ public class FestivalFacade {
         }
     }
 
-    public List<UserDTO> getFestivalGuests(Long id) {
-        EntityManager em = emf.createEntityManager();
-        List<UserDTO> guests = new ArrayList<>();
-        try {
-            Festival festival = em.find(Festival.class, id);
-            for (User user : festival.getGuests()) {
-                guests.add(new UserDTO(user));
-            }
-            return guests;
-        } finally {
-            em.close();
-        }
-    }
-
-    public List<FestivalDTO> getFestivalsByUser(String username) {
+    public List<FestivalDTO> getFestivalsByUser(String username) throws API_Exception {
         EntityManager em = emf.createEntityManager();
         List<FestivalDTO> festivals = new ArrayList<>();
         try {
@@ -147,17 +127,24 @@ public class FestivalFacade {
                 festivals.add(new FestivalDTO(festival));
             }
             return festivals;
+        } catch (Exception e) {
+            throw new API_Exception("Could not find festivals", 400);
         } finally {
             em.close();
         }
     }
 
-    public FestivalDTO removeUserFromFestival(Long id, UserDTO userToRemove) {
+    public FestivalDTO removeUserFromFestival(Long id, UserDTO userToRemove) throws API_Exception {
         EntityManager em = emf.createEntityManager();
         try {
             em.getTransaction().begin();
 
             Festival festival = em.find(Festival.class, id);
+
+            if (festival == null) {
+                throw new API_Exception("Could not find festival", 400);
+            }
+
             User user = em.find(User.class, userToRemove.getUser_name());
 
             festival.getGuests().remove(user);
@@ -175,24 +162,36 @@ public class FestivalFacade {
 
             em.getTransaction().commit();
             return new FestivalDTO(festival);
+        } catch (Exception e) {
+            throw new API_Exception("Could not remove user from festival", 400);
         } finally {
             em.close();
         }
     }
 
-    public FestivalDTO addUserToFestival(Long id, UserDTO userToAdd) {
+    public FestivalDTO addUserToFestival(Long festivalId, UserDTO userToAdd) throws API_Exception {
         EntityManager em = emf.createEntityManager();
         try {
             em.getTransaction().begin();
 
-            Festival festival = em.find(Festival.class, id);
+            Festival festival = em.find(Festival.class, festivalId);
             User user = em.find(User.class, userToAdd.getUser_name());
+
+            if (festival == null) {
+                throw new API_Exception("Could not find festival", 400);
+            }
+
+            if (user == null) {
+                throw new API_Exception("Could not find user", 400);
+            }
 
             festival.getGuests().add(user);
             user.getFestivals().add(festival);
 
             em.getTransaction().commit();
             return new FestivalDTO(festival);
+        } catch (Exception e) {
+            throw new API_Exception("Could not add user to festival", 400);
         } finally {
             em.close();
         }

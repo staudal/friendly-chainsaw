@@ -17,6 +17,7 @@ import java.util.List;
 
 @Entity
 @Table(name = "shows")
+@NamedQuery(name = "Show.deleteAllRows", query = "DELETE from Show")
 public class Show {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

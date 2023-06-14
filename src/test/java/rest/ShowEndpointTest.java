@@ -1,10 +1,11 @@
 package rest;
 
+import entities.Festival;
 import entities.Role;
+import entities.Show;
 import entities.User;
 import io.restassured.RestAssured;
 import io.restassured.parsing.Parser;
-
 import org.glassfish.grizzly.http.server.HttpServer;
 import org.glassfish.jersey.grizzly2.httpserver.GrizzlyHttpServerFactory;
 import org.glassfish.jersey.server.ResourceConfig;
@@ -18,11 +19,12 @@ import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
+import java.time.LocalDate;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
 
-public class UserEndpointTest {
+public class ShowEndpointTest {
     private static final int SERVER_PORT = 7777;
     private static final String SERVER_URL = "http://localhost/api";
 
@@ -34,6 +36,8 @@ public class UserEndpointTest {
     private static String securityToken;
 
     User user1, user2;
+    Show show1, show2;
+    Festival festival1, festival2;
 
     static HttpServer startServer() {
         ResourceConfig rc = ResourceConfig.forApplication(new ApplicationConfig());
@@ -69,6 +73,8 @@ public class UserEndpointTest {
             em.getTransaction().begin();
             em.createQuery("DELETE FROM User").executeUpdate();
             em.createQuery("DELETE FROM Role").executeUpdate();
+            em.createQuery("DELETE FROM Show").executeUpdate();
+            em.createQuery("DELETE FROM Festival").executeUpdate();
 
             user1 = new User("admin", "test123", "jakob", "staudal");
             user2 = new User("user", "test123", "bokaj", "laduats");
@@ -79,11 +85,35 @@ public class UserEndpointTest {
             user1.addRole(userRole);
             user2.addRole(adminRole);
 
+            festival1 = new Festival("Roskilde Festival", "Roskilde", LocalDate.of(2023, 5, 2), LocalDate.of(2023, 5, 6));
+            festival2 = new Festival("Smukfest", "Skanderborg", LocalDate.of(2023, 5, 2), LocalDate.of(2023, 5, 6));
+
+            show1 = new Show("Avatar 3", 124, LocalDate.of(2023, 5, 2));
+            show2 = new Show("Avatar 4", 124, LocalDate.of(2027, 5, 2));
+
+            festival1.getGuests().add(user1);
+            festival2.getGuests().add(user2);
+
+            user1.getFestivals().add(festival1);
+            user2.getFestivals().add(festival2);
+
+            festival1.getShows().add(show1);
+            festival2.getShows().add(show2);
+
+            show1.setFestival(festival1);
+            show2.setFestival(festival2);
+
+            show1.getGuests().add(user1);
+            user1.getShows().add(show1);
+
             em.persist(userRole);
             em.persist(adminRole);
-
             em.persist(user1);
             em.persist(user2);
+            em.persist(festival1);
+            em.persist(festival2);
+            em.persist(show1);
+            em.persist(show2);
 
             em.getTransaction().commit();
         } finally {
@@ -104,61 +134,120 @@ public class UserEndpointTest {
         //System.out.println("TOKEN ---> " + securityToken);
     }
 
-    // Test of getAllUsers endpoint
+    // Test of getAllShows method
     @Test
-    public void testGetAllUsers() {
+    public void testGetAllShows() {
         login("admin", "test123");
         given()
                 .contentType("application/json")
                 .header("x-access-token", securityToken)
-                .when()
-                .get("/users")
-                .then()
+                .get("/shows").then()
+                .assertThat()
                 .statusCode(200)
                 .body("size()", equalTo(2));
     }
 
-    // Test of createUser endpoint
+    // Test of getPossibleShowsByUsername method
     @Test
-    public void testCreateUser() {
+    public void testGetPossibleShowsByUsername() {
         login("admin", "test123");
         given()
                 .contentType("application/json")
                 .header("x-access-token", securityToken)
-                .body("{\"user_name\":\"test\", \"user_pass\":\"test123\", \"firstName\":\"test\", \"lastName\":\"test\"}")
-                .when()
-                .post("/users")
-                .then()
+                .get("/shows/festivals/" + user1.getUserName()).then()
+                .assertThat()
                 .statusCode(200)
-                .body("user_name", equalTo("test"));
+                .body("size()", equalTo(1));
     }
 
-    // Test of deleteUser endpoint
+    // Test of getShowsByUsername method
     @Test
-    public void testDeleteUser() {
+    public void testGetShowsByUsername() {
         login("admin", "test123");
         given()
                 .contentType("application/json")
                 .header("x-access-token", securityToken)
-                .when()
-                .delete("/users/delete/" + user2.getUserName())
-                .then()
+                .get("/shows/" + user1.getUserName()).then()
+                .assertThat()
                 .statusCode(200)
-                .body("user_name", equalTo("user"));
+                .body("size()", equalTo(1));
     }
 
-    // Test of editUser endpoint
+    // Test of createNewShow method
     @Test
-    public void testEditUser() {
+    public void testCreateNewShow() {
         login("admin", "test123");
         given()
                 .contentType("application/json")
                 .header("x-access-token", securityToken)
-                .body("{\"user_name\":\"\", \"user_pass\":\"\", \"firstName\":\"test\", \"lastName\":\"\"}")
+                .body("{\"name\": \"Avatar 5\", \"duration\": 124, \"date\": \"2023-05-02\"}")
                 .when()
-                .put("/users/edit/" + user2.getUserName())
-                .then()
+                .post("/shows").then()
+                .assertThat()
                 .statusCode(200)
-                .body("firstName", equalTo("test"));
+                .body("name", equalTo("Avatar 5"));
+    }
+
+    // Test of editShow method
+    @Test
+    public void testEditShow() {
+        login("admin", "test123");
+        given()
+                .contentType("application/json")
+                .header("x-access-token", securityToken)
+                .body("{\"name\": \"Avatar 7\", \"duration\": 0, \"date\": null}")
+                .when()
+                .put("/shows/" + show2.getId())
+                .then()
+                .assertThat()
+                .statusCode(200)
+                .body("name", equalTo("Avatar 7"));
+    }
+
+    // Test of deleteShow method
+    @Test
+    public void testDeleteShow() {
+        login("admin", "test123");
+        given()
+                .contentType("application/json")
+                .header("x-access-token", securityToken)
+                .when()
+                .delete("/shows/" + show2.getId())
+                .then()
+                .assertThat()
+                .statusCode(200)
+                .body("name", equalTo("Avatar 4"));
+    }
+
+    // Test of addUserToShow method
+    @Test
+    public void testAddUserToShow() {
+        login("admin", "test123");
+        given()
+                .contentType("application/json")
+                .header("x-access-token", securityToken)
+                .body("{\"user_name\": \"user\"}")
+                .when()
+                .put("/shows/add/" + show1.getId())
+                .then()
+                .assertThat()
+                .statusCode(200)
+                .body("name", equalTo("Avatar 3"));
+    }
+
+    // Test of removeUserFromShow method
+    @Test
+    public void testRemoveUserFromShow() {
+        login("admin", "test123");
+        given()
+                .contentType("application/json")
+                .header("x-access-token", securityToken)
+                .body("{\"user_name\": \"admin\"}")
+                .when()
+                .put("/shows/remove/" + show1.getId())
+                .then()
+                .assertThat()
+                .statusCode(200)
+                .body("name", equalTo("Avatar 3"));
     }
 }

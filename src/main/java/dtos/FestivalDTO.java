@@ -20,7 +20,8 @@ public class FestivalDTO {
     private String city;
     private String startDate;
     private String endDate;
-    private List<User> guests = new ArrayList<>();
+    private List<UserDTO> guests = new ArrayList<>();
+    private List<ShowDTO> shows = new ArrayList<>();
 
     public FestivalDTO(String name, String city, String startDate, String endDate) {
         this.name = name;
@@ -35,6 +36,12 @@ public class FestivalDTO {
         this.city = festival.getCity();
         this.startDate = festival.getStartDate().toString();
         this.endDate = festival.getEndDate().toString();
+        if (festival.getGuests() != null) {
+            this.guests = UserDTO.getUserDTOs(festival.getGuests());
+        }
+        if (festival.getShows() != null) {
+            this.shows = ShowDTO.getShowDTOs(festival.getShows());
+        }
     }
 
     public static List<FestivalDTO> getFestivalDTOs(List<Festival> festivals){
